@@ -1,0 +1,9 @@
+{
+  "cli": { "appVersionSource": "local" },
+  "build": {
+    "development": { "developmentClient": true, "distribution": "internal", "android": { "buildType": "apk" } },
+    "mock": { "distribution": "internal", "android": { "buildType": "apk" }, "env": { "EXPO_PUBLIC_MOCK_MODE": "true" } },
+    "preview": { "distribution": "internal", "android": { "buildType": "apk" } },
+    "production": { "android": { "buildType": "app-bundle" } }
+  }
+}
