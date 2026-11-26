@@ -1,11 +1,11 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { LayoutGrid, RefreshCw, RotateCcw, Save, Settings, Wifi } from 'lucide-react-native';
+import { LayoutGrid, RefreshCw, RotateCcw, Save, Search, Settings, Wifi } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Hint, SectionTitle, StatusPill } from '../components/ui';
-import { HOME_BOX_DEFAULTS } from '../config';
+import { APPLIANCES, HOME_BOX_DEFAULTS, type AppliancePaths } from '../config';
 import type { RootStackParamList } from '../navigation/types';
 import { wifi } from '../services/wifi';
 import { useHomeStore } from '../store/homeStore';
@@ -73,19 +73,44 @@ export function HomeConnectScreen() {
     checkReachable,
     saveSettings,
     resetSettings,
+    discoverRoutes,
   } = useHomeStore();
 
   const [ssid, setSsid] = useState(settings.ssid);
   const [password, setPassword] = useState(settings.password);
   const [ip, setIp] = useState(settings.ip);
+  const [paths, setPaths] = useState<Record<string, AppliancePaths>>(settings.paths);
+  const [routes, setRoutes] = useState<string[] | null>(null);
+  const [discovering, setDiscovering] = useState(false);
   useEffect(() => {
     setSsid(settings.ssid);
     setPassword(settings.password);
     setIp(settings.ip);
+    setPaths(settings.paths);
   }, [settings]);
 
+  const setPath = (id: string, key: keyof AppliancePaths, v: string) =>
+    setPaths((prev) => ({ ...prev, [id]: { ...prev[id], [key]: v } }));
+
+  async function onDiscover() {
+    setDiscovering(true);
+    try {
+      const found = await discoverRoutes();
+      setRoutes(found);
+      if (!found.length) showToast('No commands found on the box home page', 'info');
+    } catch {
+      setRoutes(null);
+      showToast('Cannot reach the box – connect to its Wi-Fi first', 'error');
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
   const ipError = ip && !IPV4.test(ip.trim()) ? 'Enter a valid IP address, e.g. 192.168.4.1' : null;
-  const dirty = ssid !== settings.ssid || password !== settings.password || ip !== settings.ip;
+  const pathsDirty = APPLIANCES.some(
+    (a) => paths[a.id]?.on !== settings.paths[a.id]?.on || paths[a.id]?.off !== settings.paths[a.id]?.off,
+  );
+  const dirty = ssid !== settings.ssid || password !== settings.password || ip !== settings.ip || pathsDirty;
   const onBox = currentSsid === settings.ssid;
   const backToPanel = () => (nav.canGoBack() ? nav.goBack() : nav.replace('HomeControl'));
 
@@ -109,7 +134,7 @@ export function HomeConnectScreen() {
       showToast('Please fix the settings first', 'error');
       return;
     }
-    saveSettings({ ssid, password, ip });
+    saveSettings({ ssid, password, ip, paths });
     showToast('Settings saved', 'success');
   }
 
@@ -191,6 +216,53 @@ export function HomeConnectScreen() {
               placeholder={HOME_BOX_DEFAULTS.ip}
               error={ipError}
             />
+          </Card>
+
+          <SectionTitle>Appliance commands</SectionTitle>
+          <Card style={{ gap: spacing.lg }}>
+            <Text style={{ color: t.colors.textMuted, lineHeight: 20 }}>
+              The URL path the app opens on the box to switch each appliance, e.g. “/fan/on”. If a
+              switch shows “HTTP 404”, ask the robotics team for the right path, or tap “Find commands
+              on box”.
+            </Text>
+            {APPLIANCES.map((a) => (
+              <View key={a.id} style={{ gap: spacing.sm }}>
+                <Text style={[styles.applianceName, { color: t.colors.text }]}>{a.name}</Text>
+                <View style={{ flexDirection: 'row', gap: spacing.md }}>
+                  <View style={{ flex: 1 }}>
+                    <Field
+                      label="ON path"
+                      value={paths[a.id]?.on ?? ''}
+                      onChangeText={(v) => setPath(a.id, 'on', v)}
+                      placeholder={a.paths.on}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Field
+                      label="OFF path"
+                      value={paths[a.id]?.off ?? ''}
+                      onChangeText={(v) => setPath(a.id, 'off', v)}
+                      placeholder={a.paths.off}
+                    />
+                  </View>
+                </View>
+              </View>
+            ))}
+            <Button
+              title={discovering ? 'Searching…' : 'Find commands on box'}
+              icon={Search}
+              variant="ghost"
+              loading={discovering}
+              onPress={onDiscover}
+            />
+            {routes && routes.length > 0 && (
+              <View style={{ gap: spacing.xs }}>
+                <Text style={[styles.label, { color: t.colors.textMuted }]}>Found on the box</Text>
+                <Text selectable style={{ color: t.colors.text, fontSize: font.md, lineHeight: 24 }}>
+                  {routes.join('\n')}
+                </Text>
+              </View>
+            )}
             <View style={{ flexDirection: 'row', gap: spacing.md }}>
               <Button title="Save" icon={Save} disabled={!dirty} onPress={onSave} style={{ flex: 1 }} />
               <Button
@@ -214,6 +286,7 @@ export function HomeConnectScreen() {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl * 2 },
   title: { fontSize: font.xl, fontWeight: '800' },
+  applianceName: { fontSize: font.md, fontWeight: '700' },
   label: { fontSize: font.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
   input: {
     minHeight: 52,

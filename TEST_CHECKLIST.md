@@ -72,9 +72,9 @@ Lift the car's wheels off the table, or use a Serial monitor on the Arduino.
 ## H. Joining the ESP32 hotspot
 
 - [ ] H0 Tapping *Home Automation* opens the appliance panel. If the box isn't connected, a **Connect to control box** button is shown at the top.
-- [ ] H1 **Connect to control box** opens the "Control box" screen. Defaults are filled in: `RoboHome-Box`, `robohome123`, `192.168.4.1`.
+- [ ] H1 **Connect to control box** opens the "Control box" screen. Defaults are filled in: `HIPROTECH_HOME`, `12345678`, `192.168.4.1`.
 - [ ] H2 The current Wi-Fi name is shown (for example the school Wi-Fi).
-- [ ] H3 Tap *Connect to control box*. Android shows its "connect to device" dialog, then the phone joins RoboHome-Box, then the pills show "Wi-Fi: RoboHome-Box" (green) and "Box reachable" (green), then the app returns to the appliance panel.
+- [ ] H3 Tap *Connect to control box*. Android shows its "connect to device" dialog, then the phone joins HIPROTECH_HOME, then the pills show "Wi-Fi: HIPROTECH_HOME" (green) and "Box reachable" (green), then the app returns to the appliance panel.
 - [ ] H4 Wrong password in settings: a clear "Wrong password" message appears with the *Open Wi-Fi settings* fallback.
 - [ ] H5 *Open Wi-Fi settings* opens Android Wi-Fi settings. Join manually, come back and tap *Check again*: reachable.
 - [ ] H6 Change the IP and save, then kill and restart the app. The value is kept. *Defaults* restores the original values.
@@ -82,7 +82,7 @@ Lift the car's wheels off the table, or use a Serial monitor on the Arduino.
 
 ## I. Box reachable while the hotspot has no internet
 
-- [ ] I1 Turn **mobile data ON** and join RoboHome-Box. The box is still reachable, so requests aren't going over mobile data.
+- [ ] I1 Turn **mobile data ON** and join HIPROTECH_HOME. The box is still reachable, so requests aren't going over mobile data.
 - [ ] I2 Android shows "No internet" on the Wi-Fi. The app still controls the box.
 - [ ] I3 Leave the phone on the hotspot for 2 minutes. Android doesn't switch back to mobile data, and toggles still work.
 - [ ] I4 Go back to the Home screen. Other apps (for example a browser) use mobile data again.

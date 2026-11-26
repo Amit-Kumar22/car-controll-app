@@ -3,7 +3,7 @@
 Android app for robotics trainers and students. It does two things:
 
 - **Robot Car Control** drives an HC-05 Bluetooth car with a hold-to-move D-pad and a big STOP button.
-- **Home Automation** switches the appliances on the ESP32 "RoboHome-Box" over its Wi-Fi hotspot.
+- **Home Automation** switches the appliances on the ESP32 "HIPROTECH_HOME" over its Wi-Fi hotspot.
 
 Stack: Expo SDK 58 (development build, so native modules work) · React Native 0.88 · TypeScript ·
 React Navigation native stack · Zustand + AsyncStorage · `react-native-bluetooth-classic` ·
@@ -76,7 +76,7 @@ Mock mode is controlled by `MOCK_MODE` in `src/config/index.ts`, or by the
 - the control screen shows the last command the car "received" and has a **Simulate connection loss** button;
 - the control panel has a **Mock: toggle box reachable** button.
 
-> **Testing the hotspot with a dev build:** once the phone joins `RoboHome-Box` it can no longer
+> **Testing the hotspot with a dev build:** once the phone joins `HIPROTECH_HOME` it can no longer
 > reach Metro on your laptop over Wi-Fi. Either keep USB connected and run
 > `adb reverse tcp:8081 tcp:8081` before opening the app, or (more reliably) test home automation
 > with a release APK (section 4).
@@ -187,7 +187,7 @@ Change the characters to match your Arduino sketch.
 ### Control box defaults
 
 ```ts
-export const HOME_BOX_DEFAULTS = { ssid: 'RoboHome-Box', password: 'robohome123', ip: '192.168.4.1' };
+export const HOME_BOX_DEFAULTS = { ssid: 'HIPROTECH_HOME', password: '12345678', ip: '192.168.4.1' };
 export const HTTP_TIMEOUT_MS = 3000;
 ```
 

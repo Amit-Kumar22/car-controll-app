@@ -48,13 +48,10 @@ export const CAR_DEVICE_NAME_HINTS = ['HC-05', 'HC-06', 'ROBOT', 'CAR'];
 // HOME CONTROL BOX (ESP32 access point)
 // ---------------------------------------------------------------------------
 export const HOME_BOX_DEFAULTS = {
-  ssid: 'RoboHome-Box',
-  password: 'robohome123',
+  ssid: 'HIPROTECH_HOME',
+  password: '12345678',
   ip: '192.168.4.1',
 };
-
-/** Expected `device` value in the /ping response. */
-export const HOME_BOX_DEVICE_ID = 'robohome';
 
 /** Every HTTP request to the box is aborted after this long. */
 export const HTTP_TIMEOUT_MS = 3000;
@@ -66,15 +63,22 @@ export const WIFI_JOIN_TIMEOUT_S = 20;
 export const BOX_PING_INTERVAL_MS = 5000;
 
 export const HOME_API_PATHS = {
+  /** Any HTTP reply (even 404) counts as "box reachable". */
   ping: '/ping',
+  /** Optional. JSON like {"bulb":1,"fan":0}. Ignored if the box doesn't have it. */
   status: '/status',
-  /** /<id>/on and /<id>/off */
-  toggle: (id: string, on: boolean) => `/${id}/${on ? 'on' : 'off'}`,
 };
+
+/** ON / OFF URL paths for one appliance. Editable in the app under Control box settings. */
+export interface AppliancePaths {
+  on: string;
+  off: string;
+}
 
 // ---------------------------------------------------------------------------
 // APPLIANCES — add a new one by adding a line here.
-// `id` must match the ESP32 route (/<id>/on, /<id>/off) and the key in /status.
+// `id` is the key in the optional /status JSON.
+// `paths` are the default ON/OFF routes on the box (users can change them in the app).
 // `icon` must be a key of APPLIANCE_ICONS in src/components/ApplianceIcon.tsx.
 // ---------------------------------------------------------------------------
 export type ApplianceIconName = 'bulb' | 'fan' | 'plug' | 'tv' | 'ac' | 'lamp';
@@ -83,13 +87,30 @@ export interface ApplianceConfig {
   id: string;
   name: string;
   icon: ApplianceIconName;
+  paths: AppliancePaths;
+  /**
+   * Other route names the box firmware might use. If the configured path gives
+   * HTTP 404, the app tries `/<name>/on|off` for each and saves the one that works.
+   */
+  altNames?: string[];
 }
 
 export const APPLIANCES: ApplianceConfig[] = [
-  { id: 'bulb', name: 'Bulb', icon: 'bulb' },
-  { id: 'fan', name: 'Fan', icon: 'fan' },
-  // { id: 'socket', name: 'Socket', icon: 'plug' },
+  {
+    id: 'bulb',
+    name: 'Bulb',
+    icon: 'bulb',
+    paths: { on: '/light/on', off: '/light/off' },
+    altNames: ['bulb', 'led', 'lamp', 'light1', 'bulb1'],
+  },
+  { id: 'fan', name: 'Fan', icon: 'fan', paths: { on: '/fan/on', off: '/fan/off' }, altNames: ['fan1'] },
+  { id: 'tv', name: 'TV', icon: 'tv', paths: { on: '/tv/on', off: '/tv/off' } },
+  // { id: 'socket', name: 'Socket', icon: 'plug', paths: { on: '/socket/on', off: '/socket/off' } },
 ];
+
+export const DEFAULT_APPLIANCE_PATHS: Record<string, AppliancePaths> = Object.fromEntries(
+  APPLIANCES.map((a) => [a.id, { ...a.paths }]),
+);
 
 // ---------------------------------------------------------------------------
 // MISC
