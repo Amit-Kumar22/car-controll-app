@@ -3,36 +3,58 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import {
   APPLIANCES,
-  DEFAULT_APPLIANCE_PATHS,
   HOME_BOX_DEFAULTS,
   STORAGE_KEYS,
+  type ApplianceConfig,
   type AppliancePaths,
 } from '../config';
 import { homeApi, HomeApiError, type ApplianceState } from '../services/homeApi';
 import { wifi, WifiError } from '../services/wifi';
+import { getAppliances } from './appConfigStore';
 import { showToast } from './toastStore';
 
 export interface BoxSettings {
   ssid: string;
   password: string;
   ip: string;
-  /** ON/OFF URL path per appliance id. */
+  /**
+   * Only the ON/OFF paths this phone's user changed, per appliance id.
+   * Everything else follows the appliance list from the website, so an admin
+   * can fix a path for everyone.
+   */
   paths: Record<string, AppliancePaths>;
 }
 
-const defaultSettings = (): BoxSettings => ({
-  ...HOME_BOX_DEFAULTS,
-  paths: JSON.parse(JSON.stringify(DEFAULT_APPLIANCE_PATHS)),
-});
+const defaultSettings = (): BoxSettings => ({ ...HOME_BOX_DEFAULTS, paths: {} });
 
-/** Fills in paths for appliances added after the settings were saved. */
-function withAllPaths(paths: Record<string, AppliancePaths> | undefined): Record<string, AppliancePaths> {
+/** Effective ON/OFF path for every appliance: user override, else the appliance default. */
+export function withAllPaths(
+  paths: Record<string, AppliancePaths> | undefined,
+  appliances: ApplianceConfig[] = getAppliances(),
+): Record<string, AppliancePaths> {
   const out: Record<string, AppliancePaths> = {};
-  for (const a of APPLIANCES) {
+  for (const a of appliances) {
     out[a.id] = {
       on: paths?.[a.id]?.on?.trim() || a.paths.on,
       off: paths?.[a.id]?.off?.trim() || a.paths.off,
     };
+  }
+  return out;
+}
+
+/** Drops paths that are the same as the appliance's default (they are not real overrides). */
+function overridesOnly(
+  paths: Record<string, AppliancePaths> | undefined,
+  appliances: ApplianceConfig[] = getAppliances(),
+): Record<string, AppliancePaths> {
+  const out: Record<string, AppliancePaths> = {};
+  for (const [id, p] of Object.entries(paths ?? {})) {
+    const def = appliances.find((a) => a.id === id)?.paths;
+    const on = p?.on?.trim() ?? '';
+    const off = p?.off?.trim() ?? '';
+    if (!on && !off) continue;
+    if (def && on === def.on && off === def.off) continue;
+    out[id] = { on: on || def?.on || '', off: off || def?.off || '' };
   }
   return out;
 }
@@ -82,7 +104,7 @@ export const useHomeStore = create<HomeState>()(
             ssid: s.ssid.trim(),
             password: s.password,
             ip: s.ip.trim(),
-            paths: withAllPaths(s.paths),
+            paths: overridesOnly(s.paths),
           },
           reachability: 'unknown',
         });
@@ -136,7 +158,7 @@ export const useHomeStore = create<HomeState>()(
         try {
           if (get().reachability !== 'reachable') await wifi.forceWifi(true);
           // Boxes without /status return {} – then we keep the last known state.
-          const state = await homeApi.getStatus(get().settings.ip);
+          const state = await homeApi.getStatus(get().settings.ip, getAppliances().map((a) => a.id));
           set({ appliances: { ...get().appliances, ...state }, reachability: 'reachable' });
         } catch (e) {
           const offline = !(e instanceof HomeApiError) || e.code === 'timeout' || e.code === 'network';
@@ -193,7 +215,7 @@ export const useHomeStore = create<HomeState>()(
           return await homeApi.setAppliance(ip, id, on, on ? paths.on : paths.off);
         } catch (e) {
           if (!(e instanceof HomeApiError) || e.status !== 404) throw e;
-          const appliance = APPLIANCES.find((a) => a.id === id);
+          const appliance = getAppliances().find((a) => a.id === id);
           const candidates = [
             ...new Set([appliance?.paths, ...(appliance?.altNames ?? []).map((n) => ({ on: `/${n}/on`, off: `/${n}/off` }))]),
           ].filter((c): c is AppliancePaths => !!c && c.on !== paths.on);
@@ -235,7 +257,8 @@ export const useHomeStore = create<HomeState>()(
           settings: {
             ...current.settings,
             ...p.settings,
-            paths: withAllPaths(p.settings?.paths),
+            // Older versions saved every path; keep only real user changes vs. the built-in defaults.
+            paths: overridesOnly(p.settings?.paths, APPLIANCES),
           },
         };
       },

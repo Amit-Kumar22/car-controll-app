@@ -76,12 +76,16 @@ export interface AppliancePaths {
 }
 
 // ---------------------------------------------------------------------------
-// APPLIANCES — add a new one by adding a line here.
+// APPLIANCES
+// The live list comes from the IoT Cloud website (Admin → App config) and is
+// cached on the phone — see src/store/appConfigStore.ts. The list below is
+// only the built-in fallback used before the first download / without internet.
 // `id` is the key in the optional /status JSON.
 // `paths` are the default ON/OFF routes on the box (users can change them in the app).
-// `icon` must be a key of APPLIANCE_ICONS in src/components/ApplianceIcon.tsx.
+// `icon` is a key of APPLIANCE_ICONS in src/components/ApplianceIcon.tsx
+// (unknown names from the server fall back to a generic icon).
 // ---------------------------------------------------------------------------
-export type ApplianceIconName = 'bulb' | 'fan' | 'plug' | 'tv' | 'ac' | 'lamp';
+export type ApplianceIconName = string;
 
 export interface ApplianceConfig {
   id: string;
@@ -95,6 +99,7 @@ export interface ApplianceConfig {
   altNames?: string[];
 }
 
+/** Built-in fallback. Use `useAppliances()` / `getAppliances()` from appConfigStore in app code. */
 export const APPLIANCES: ApplianceConfig[] = [
   {
     id: 'bulb',
@@ -108,9 +113,20 @@ export const APPLIANCES: ApplianceConfig[] = [
   // { id: 'socket', name: 'Socket', icon: 'plug', paths: { on: '/socket/on', off: '/socket/off' } },
 ];
 
-export const DEFAULT_APPLIANCE_PATHS: Record<string, AppliancePaths> = Object.fromEntries(
-  APPLIANCES.map((a) => [a.id, { ...a.paths }]),
-);
+// ---------------------------------------------------------------------------
+// IOT CLOUD (backend + website: the iot-platform project)
+// ---------------------------------------------------------------------------
+/**
+ * Backend base URL. Override without editing code:
+ *   EXPO_PUBLIC_API_URL=http://my-server:5010 npx expo start
+ */
+export const CLOUD_API_URL: string = (process.env.EXPO_PUBLIC_API_URL || 'http://69.62.75.151:5010').replace(/\/+$/, '');
+
+/** Cloud requests are aborted after this long. */
+export const CLOUD_TIMEOUT_MS = 8000;
+
+/** Re-download the remote appliance list at most this often (it is also refreshed on app start). */
+export const APP_CONFIG_REFRESH_MS = 60_000;
 
 // ---------------------------------------------------------------------------
 // MISC
@@ -118,6 +134,9 @@ export const DEFAULT_APPLIANCE_PATHS: Record<string, AppliancePaths> = Object.fr
 export const STORAGE_KEYS = {
   car: 'robotics-trainer/car',
   home: 'robotics-trainer/home',
+  appConfig: 'robotics-trainer/app-config',
+  /** SecureStore key (only letters, digits, . - _ allowed). */
+  cloudToken: 'robotics-trainer.cloud-token',
 };
 
 export const TOAST_DURATION_MS = 2800;

@@ -1,14 +1,16 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowUpRight, Bluetooth, CarFront, House, RotateCcw, Wifi, type LucideIcon } from 'lucide-react-native';
-import { useCallback, useMemo } from 'react';
+import { ArrowUpRight, Bluetooth, CarFront, Cloud, House, RotateCcw, Wifi, type LucideIcon } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandLogo, BrandMark } from '../components/Brand';
 import { MOCK_MODE } from '../config';
 import type { RootStackParamList } from '../navigation/types';
+import { useAppConfigStore } from '../store/appConfigStore';
 import { useCarStore } from '../store/carStore';
+import { useCloudStore } from '../store/cloudStore';
 import { useHomeStore } from '../store/homeStore';
 import { cardShadow, font, palette, radius, spacing, useTheme } from '../theme';
 
@@ -123,11 +125,20 @@ export function HomeScreen() {
   const lastCar = useCarStore((s) => s.lastDevice);
   const connect = useCarStore((s) => s.connect);
 
-  // Leaving the home-automation module: give normal internet routing back.
+  const refreshAppConfig = useAppConfigStore((s) => s.refresh);
+  const cloudAuth = useCloudStore((s) => s.auth);
+  const cloudDevices = useCloudStore((s) => s.devices);
+  const initCloud = useCloudStore((s) => s.init);
+  useEffect(() => {
+    initCloud();
+  }, [initCloud]);
+
+  // Leaving the home-automation module: give normal internet routing back,
+  // then (with internet) pick up appliance changes made on the website.
   useFocusEffect(
     useCallback(() => {
-      releaseWifi();
-    }, [releaseWifi]),
+      releaseWifi().finally(() => refreshAppConfig());
+    }, [releaseWifi, refreshAppConfig]),
   );
 
   const now = useMemo(() => new Date(), []);
@@ -206,6 +217,18 @@ export function HomeScreen() {
             onlineLabel="Online"
             offlineLabel={setupDone ? 'Offline' : 'Not set up'}
             onPress={() => nav.navigate('HomeControl')}
+          />
+        </View>
+        <View style={styles.grid}>
+          <ModuleTile
+            title="IoT Cloud"
+            subtitle="Internet · control from anywhere"
+            icon={Cloud}
+            tone="orange"
+            online={cloudAuth === 'signedIn'}
+            onlineLabel={cloudDevices ? `${cloudDevices.length} device${cloudDevices.length === 1 ? '' : 's'}` : 'Signed in'}
+            offlineLabel="Not signed in"
+            onPress={() => nav.navigate('Cloud')}
           />
         </View>
 

@@ -24,8 +24,8 @@ export class HomeApiError extends Error {
 
 export interface HomeApi {
   ping(ip: string): Promise<boolean>;
-  /** States the box reported. Empty when the box has no usable /status route. */
-  getStatus(ip: string): Promise<ApplianceState>;
+  /** States the box reported for these appliance ids. Empty when the box has no usable /status route. */
+  getStatus(ip: string, ids: string[]): Promise<ApplianceState>;
   /** Calls `path` on the box. Returns the new state (from the reply, or `on` when the reply has none). */
   setAppliance(ip: string, id: string, on: boolean, path: string): Promise<boolean>;
   /** Paths found in the box's home page (links, buttons, fetch calls). */
@@ -98,15 +98,15 @@ const realApi: HomeApi = {
     }
   },
 
-  async getStatus(ip) {
+  async getStatus(ip, ids) {
     const reply = await request(ip, HOME_API_PATHS.status);
     if (!reply.ok) return {}; // Box has no /status – that's fine.
     const json = tryJson(reply.text);
     const state: ApplianceState = {};
     if (json && typeof json === 'object') {
-      for (const a of APPLIANCES) {
-        const v = parseState(json[a.id]);
-        if (v !== undefined) state[a.id] = v;
+      for (const id of ids) {
+        const v = parseState(json[id]);
+        if (v !== undefined) state[id] = v;
       }
     }
     return state;
@@ -158,7 +158,7 @@ const realApi: HomeApi = {
 // ---------------------------------------------------------------------------
 export const mockBox = {
   reachable: true,
-  state: Object.fromEntries(APPLIANCES.map((a) => [a.id, false])) as ApplianceState,
+  state: {} as ApplianceState, // missing id = off
 };
 
 const latency = () => new Promise((r) => setTimeout(r, 250 + Math.random() * 350));
@@ -168,10 +168,10 @@ const mockApi: HomeApi = {
     await latency();
     return mockBox.reachable;
   },
-  async getStatus() {
+  async getStatus(_ip, ids) {
     await latency();
     if (!mockBox.reachable) throw new HomeApiError('Cannot reach the control box', 'network');
-    return { ...mockBox.state };
+    return Object.fromEntries(ids.map((id) => [id, !!mockBox.state[id]]));
   },
   async setAppliance(_ip, id, on) {
     await latency();

@@ -1,6 +1,8 @@
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { CarConnectScreen } from '../screens/CarConnectScreen';
+import { CloudDeviceScreen } from '../screens/CloudDeviceScreen';
+import { CloudScreen } from '../screens/CloudScreen';
 import { CarControlScreen } from '../screens/CarControlScreen';
 import { HomeConnectScreen } from '../screens/HomeConnectScreen';
 import { HomeControlScreen } from '../screens/HomeControlScreen';
@@ -42,6 +44,8 @@ export function RootNavigator() {
         <Stack.Screen name="CarControl" component={CarControlScreen} options={{ title: 'Robot Car Control' }} />
         <Stack.Screen name="HomeConnect" component={HomeConnectScreen} options={{ title: 'Control box' }} />
         <Stack.Screen name="HomeControl" component={HomeControlScreen} options={{ title: 'Home Automation' }} />
+        <Stack.Screen name="Cloud" component={CloudScreen} options={{ title: 'IoT Cloud' }} />
+        <Stack.Screen name="CloudDevice" component={CloudDeviceScreen} options={{ title: 'Device' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

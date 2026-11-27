@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ApplianceConfig } from '../config';
 import { cardShadow, font, radius, spacing, useTheme } from '../theme';
-import { APPLIANCE_ICONS } from './ApplianceIcon';
+import { ApplianceGlyph } from './ApplianceIcon';
 
 export function ApplianceCard({
   appliance,
@@ -17,7 +17,6 @@ export function ApplianceCard({
   onToggle: () => void;
 }) {
   const t = useTheme();
-  const Icon = APPLIANCE_ICONS[appliance.icon];
   const bg = on ? t.colors.accent : t.colors.surface;
   const fg = on ? t.colors.onAccent : t.colors.text;
   const muted = on ? t.colors.onAccent : t.colors.textMuted;
@@ -43,7 +42,7 @@ export function ApplianceCard({
             { backgroundColor: on ? 'rgba(255,255,255,0.22)' : t.colors.off },
           ]}
         >
-          <Icon color={on ? t.colors.onAccent : t.colors.onOff} size={30} strokeWidth={2} />
+          <ApplianceGlyph name={appliance.icon} color={on ? t.colors.onAccent : t.colors.onOff} size={30} strokeWidth={2} />
         </View>
         {loading && <ActivityIndicator color={fg} />}
       </View>

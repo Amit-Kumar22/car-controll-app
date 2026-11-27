@@ -1,14 +1,15 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LayoutGrid, RefreshCw, RotateCcw, Save, Search, Settings, Wifi } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Hint, SectionTitle, StatusPill } from '../components/ui';
-import { APPLIANCES, HOME_BOX_DEFAULTS, type AppliancePaths } from '../config';
+import { HOME_BOX_DEFAULTS, type AppliancePaths } from '../config';
 import type { RootStackParamList } from '../navigation/types';
 import { wifi } from '../services/wifi';
-import { useHomeStore } from '../store/homeStore';
+import { useAppliances } from '../store/appConfigStore';
+import { useHomeStore, withAllPaths } from '../store/homeStore';
 import { showToast } from '../store/toastStore';
 import { font, radius, spacing, useTheme } from '../theme';
 
@@ -79,15 +80,18 @@ export function HomeConnectScreen() {
   const [ssid, setSsid] = useState(settings.ssid);
   const [password, setPassword] = useState(settings.password);
   const [ip, setIp] = useState(settings.ip);
-  const [paths, setPaths] = useState<Record<string, AppliancePaths>>(settings.paths);
+  const appliances = useAppliances();
+  // Effective paths (user overrides + defaults from the website's appliance list).
+  const savedPaths = useMemo(() => withAllPaths(settings.paths, appliances), [settings.paths, appliances]);
+  const [paths, setPaths] = useState<Record<string, AppliancePaths>>(savedPaths);
   const [routes, setRoutes] = useState<string[] | null>(null);
   const [discovering, setDiscovering] = useState(false);
   useEffect(() => {
     setSsid(settings.ssid);
     setPassword(settings.password);
     setIp(settings.ip);
-    setPaths(settings.paths);
-  }, [settings]);
+    setPaths(savedPaths);
+  }, [settings, savedPaths]);
 
   const setPath = (id: string, key: keyof AppliancePaths, v: string) =>
     setPaths((prev) => ({ ...prev, [id]: { ...prev[id], [key]: v } }));
@@ -107,8 +111,8 @@ export function HomeConnectScreen() {
   }
 
   const ipError = ip && !IPV4.test(ip.trim()) ? 'Enter a valid IP address, e.g. 192.168.4.1' : null;
-  const pathsDirty = APPLIANCES.some(
-    (a) => paths[a.id]?.on !== settings.paths[a.id]?.on || paths[a.id]?.off !== settings.paths[a.id]?.off,
+  const pathsDirty = appliances.some(
+    (a) => paths[a.id]?.on !== savedPaths[a.id]?.on || paths[a.id]?.off !== savedPaths[a.id]?.off,
   );
   const dirty = ssid !== settings.ssid || password !== settings.password || ip !== settings.ip || pathsDirty;
   const onBox = currentSsid === settings.ssid;
@@ -225,7 +229,7 @@ export function HomeConnectScreen() {
               switch shows “HTTP 404”, ask the robotics team for the right path, or tap “Find commands
               on box”.
             </Text>
-            {APPLIANCES.map((a) => (
+            {appliances.map((a) => (
               <View key={a.id} style={{ gap: spacing.sm }}>
                 <Text style={[styles.applianceName, { color: t.colors.text }]}>{a.name}</Text>
                 <View style={{ flexDirection: 'row', gap: spacing.md }}>

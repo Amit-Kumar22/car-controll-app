@@ -1,4 +1,16 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(cd /Users/amitkumar/Projects/Amit/app/iot-platform && sed -n 150,260p node_modules/aedes/types/instance.d.ts; grep -nE \"publish|createBroker\" node_modules/aedes/docs/Aedes.md | head -30; grep -n \"interface Client\\\\|id:\\\\|close\\\\|  [a-z]*:\" node_modules/aedes/types/client.d.ts | head -20)",
+      "Read(//Users/amitkumar/Projects/Amit/app/iot-platform/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/amitkumar/Projects/Amit/app/iot-platform/src/lib",
+      "/Users/amitkumar/Projects/Amit/app/iot-platform/src/app/api/auth/logout",
+      "/Users/amitkumar/Projects/Amit/app/iot-platform/src/components",
+      "/Users/amitkumar/Projects/Amit/app/iot-platform"
+    ]
+  },
   "enabledPlugins": {
     "expo@claude-plugins-official": true
   }

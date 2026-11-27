@@ -6,9 +6,10 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, useWindowDimensi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApplianceCard } from '../components/ApplianceCard';
 import { Button, StatusPill } from '../components/ui';
-import { APPLIANCES, BOX_PING_INTERVAL_MS, MOCK_MODE } from '../config';
+import { BOX_PING_INTERVAL_MS, MOCK_MODE } from '../config';
 import type { RootStackParamList } from '../navigation/types';
 import { mockBox } from '../services/homeApi';
+import { useAppliances } from '../store/appConfigStore';
 import { useHomeStore } from '../store/homeStore';
 import { cardShadow, font, radius, spacing, useTheme } from '../theme';
 
@@ -18,6 +19,7 @@ export function HomeControlScreen() {
   const { width } = useWindowDimensions();
   const columns = width >= 900 ? 4 : width >= 600 ? 3 : 2;
 
+  const applianceList = useAppliances();
   const appliances = useHomeStore((s) => s.appliances);
   const pending = useHomeStore((s) => s.pending);
   const reachability = useHomeStore((s) => s.reachability);
@@ -98,7 +100,7 @@ export function HomeControlScreen() {
 
       <FlatList
         key={columns}
-        data={APPLIANCES}
+        data={applianceList}
         keyExtractor={(a) => a.id}
         numColumns={columns}
         columnWrapperStyle={{ gap: spacing.lg }}
@@ -119,6 +121,9 @@ export function HomeControlScreen() {
             onToggle={() => toggle(item.id)}
           />
         )}
+        ListEmptyComponent={
+          <Text style={[styles.footer, { color: t.colors.textMuted }]}>No appliances configured yet.</Text>
+        }
         ListFooterComponent={
           <View style={{ gap: spacing.md, marginTop: spacing.lg }}>
             <Text style={[styles.footer, { color: t.colors.textMuted }]}>Pull down to refresh.</Text>

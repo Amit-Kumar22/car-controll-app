@@ -194,19 +194,34 @@ export const HTTP_TIMEOUT_MS = 3000;
 Users can also change SSID, password and IP in the app (gear icon on the control panel). Those
 values are saved on the phone, and **Defaults** restores the values from the config file.
 
-### Adding an appliance (for example a socket)
+### Adding an appliance (for example a socket): no new APK needed
 
-1. On the ESP32, add `/socket/on` and `/socket/off` routes, and include `"socket": 0|1` in the
-   `/status` reply.
-2. In `src/config/index.ts`, add:
-   ```ts
-   { id: 'socket', name: 'Socket', icon: 'plug' },
-   ```
-   The `id` must match the URL path and the `/status` key. Available icons: `bulb`, `fan`, `plug`,
-   `tv`, `ac`, `lamp`. To add another icon, map it in `src/components/ApplianceIcon.tsx` and add the
-   name to `ApplianceIconName`.
+The Home Automation buttons come from the IoT Cloud website (the `iot-platform` project):
 
-No other changes are needed. The grid builds itself from the `APPLIANCES` array.
+1. On the ESP32, add `/socket/on` and `/socket/off` routes, and optionally include `"socket": 0|1`
+   in the `/status` reply.
+2. On the website, log in with an admin account (listed in the backend's `ADMIN_EMAILS`) and open
+   **App config**. Add the appliance (name, id, icon, ON/OFF paths) and press **Save & publish**.
+3. Phones pick up the new list the next time the app opens, or returns to its home screen, **with
+   internet**. The list is cached, so it keeps working on the control box's hotspot, which has no internet.
+
+The `id` is also the key read from `/status`. Icons available on both sides are listed in
+`src/components/ApplianceIcon.tsx` (and `iot-platform/src/lib/appliance-icons.ts`). An unknown
+icon name shows the Power icon. Adding a *new* icon name does need a new APK.
+
+`APPLIANCES` in `src/config/index.ts` is only the built-in fallback, used until the first
+successful download (or in mock mode). ON/OFF paths a user edits in the app are saved as personal
+overrides. Every other path follows the website, so an admin can fix a wrong path for everyone.
+
+### IoT Cloud (control over the internet)
+
+The **IoT Cloud** tile on the home screen logs in to the same backend as the website, lists the
+user's devices (own and shared) and controls them live: switches, sliders and sensor values over
+REST plus a WebSocket. Devices, datastreams, automations and sharing are managed on the website.
+
+The backend URL is `CLOUD_API_URL` in `src/config/index.ts` (default `http://69.62.75.151:5010`).
+You can override it at build time with `EXPO_PUBLIC_API_URL=...`. The login token is stored with
+`expo-secure-store`.
 
 ---
 
