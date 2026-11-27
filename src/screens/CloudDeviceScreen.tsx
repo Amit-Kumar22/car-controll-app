@@ -1,16 +1,17 @@
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useLayoutEffect } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CalendarClock, Plus, Trash2 } from 'lucide-react-native';
+import { useCallback, useLayoutEffect } from 'react';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CloudSlider } from '../components/CloudSlider';
-import { Card, Hint, StatusPill } from '../components/ui';
+import { Button, Card, Hint, SectionTitle, StatusPill } from '../components/ui';
 import { useNow } from '../hooks/useNow';
 import type { RootStackParamList } from '../navigation/types';
-import type { CloudDatastream, CloudDevice } from '../services/cloudApi';
+import type { CloudDatastream, CloudDevice, CloudSchedule } from '../services/cloudApi';
 import { isDeviceOnline, useCloudStore } from '../store/cloudStore';
 import { cardShadow, font, radius, spacing, useTheme } from '../theme';
-import { formatCloudValue, timeAgo } from '../utils/cloudFormat';
+import { daysLabel, formatCloudValue, timeAgo, to12h, whenLabel } from '../utils/cloudFormat';
 
 export function CloudDeviceScreen() {
   const t = useTheme();
@@ -19,7 +20,14 @@ export function CloudDeviceScreen() {
   const device = useCloudStore((s) => s.devices?.find((d) => d.id === id));
   const loading = useCloudStore((s) => s.loading);
   const loadDevices = useCloudStore((s) => s.loadDevices);
+  const loadSchedules = useCloudStore((s) => s.loadSchedules);
   const now = useNow();
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSchedules(id);
+    }, [loadSchedules, id]),
+  );
 
   useLayoutEffect(() => {
     if (device) nav.setOptions({ title: device.name });
@@ -40,7 +48,7 @@ export function CloudDeviceScreen() {
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={loadDevices} colors={[t.colors.accent]} tintColor={t.colors.accent} />}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { loadDevices(); loadSchedules(id); }} colors={[t.colors.accent]} tintColor={t.colors.accent} />}
       >
         <StatusPill
           ok={online}
@@ -59,6 +67,7 @@ export function CloudDeviceScreen() {
             <Widget key={ds.pin} device={device} ds={ds} canControl={canControl} now={now} />
           ))}
         </View>
+        <Schedules device={device} canEdit={canControl} now={now} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -127,6 +136,106 @@ function Widget({ device, ds, canControl, now }: { device: CloudDevice; ds: Clou
   );
 }
 
+function Schedules({ device, canEdit, now }: { device: CloudDevice; canEdit: boolean; now: number }) {
+  const t = useTheme();
+  const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const list = useCloudStore((s) => s.schedules[device.id]);
+  const controllable = device.datastreams.some((d) => d.kind !== 'value');
+  if (!controllable) return null;
+
+  return (
+    <View style={{ gap: spacing.md }}>
+      <SectionTitle>Schedules</SectionTitle>
+      {list === undefined && <ActivityIndicator color={t.colors.primary} />}
+      {list?.length === 0 && (
+        <Card>
+          <Text style={{ color: t.colors.textMuted, lineHeight: 20 }}>
+            Switch things at a set time, e.g. “Every day at 7:00 PM → Light ON”. Runs on the server, even when the phone is off.
+          </Text>
+        </Card>
+      )}
+      {list?.map((s) => <ScheduleRow key={s.id} s={s} device={device} canEdit={canEdit} now={now} />)}
+      {canEdit && (
+        <Button
+          title="Add schedule"
+          icon={Plus}
+          variant="outline"
+          onPress={() => nav.navigate('CloudSchedule', { deviceId: device.id })}
+        />
+      )}
+    </View>
+  );
+}
+
+function ScheduleRow({ s, device, canEdit, now }: { s: CloudSchedule; device: CloudDevice; canEdit: boolean; now: number }) {
+  const t = useTheme();
+  const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const setEnabled = useCloudStore((st) => st.setScheduleEnabled);
+  const remove = useCloudStore((st) => st.deleteSchedule);
+  const ds = device.datastreams.find((d) => d.pin === s.pin);
+  const valueText =
+    ds?.kind === 'switch' ? (Number(s.value) === 1 ? 'ON' : 'OFF') : `${s.value}${ds?.unit ? ` ${ds.unit}` : ''}`;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Schedule ${s.name}`}
+      disabled={!canEdit}
+      onPress={() => nav.navigate('CloudSchedule', { deviceId: device.id, scheduleId: s.id })}
+      onLongPress={() =>
+        canEdit &&
+        Alert.alert('Delete schedule?', `“${s.name}” will be removed.`, [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => remove(s) },
+        ])
+      }
+      style={[
+        styles.scheduleRow,
+        { backgroundColor: t.colors.surface, borderColor: t.colors.border, opacity: s.enabled ? 1 : 0.6 },
+        cardShadow(t),
+      ]}
+    >
+      <CalendarClock color={s.enabled ? t.colors.primaryText : t.colors.textMuted} size={26} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={{ color: t.colors.text, fontSize: font.lg, fontWeight: '800' }}>
+          {to12h(s.time)} <Text style={{ fontSize: font.sm, fontWeight: '600', color: t.colors.textMuted }}>{daysLabel(s.days)}</Text>
+        </Text>
+        <Text style={{ color: t.colors.text }} numberOfLines={1}>
+          {s.name} · {ds?.name ?? s.pin} → {valueText}
+        </Text>
+        <Text style={{ color: t.colors.textMuted, fontSize: font.xs }}>
+          {s.enabled ? `Next: ${whenLabel(s.nextRunAt, now)}` : 'Paused'}
+        </Text>
+        {s.lastError && <Text style={{ color: t.colors.danger, fontSize: font.xs }}>Last run failed: {s.lastError}</Text>}
+      </View>
+      {canEdit && (
+        <View style={{ alignItems: 'center', gap: spacing.xs }}>
+          <Switch
+            value={s.enabled}
+            onValueChange={(v) => setEnabled(s, v)}
+            trackColor={{ true: t.colors.primary, false: t.colors.off }}
+            thumbColor={t.colors.surface}
+            accessibilityLabel={s.enabled ? 'Pause schedule' : 'Resume schedule'}
+          />
+          <Pressable
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Delete schedule"
+            onPress={() =>
+              Alert.alert('Delete schedule?', `“${s.name}” will be removed.`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => remove(s) },
+              ])
+            }
+          >
+            <Trash2 color={t.colors.textMuted} size={18} />
+          </Pressable>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl * 2 },
@@ -138,4 +247,12 @@ const styles = StyleSheet.create({
   pin: { fontSize: font.xs, fontWeight: '700', letterSpacing: 0.5 },
   name: { fontSize: font.md, fontWeight: '700' },
   big: { fontSize: font.xxl, fontWeight: '800', marginTop: 'auto' },
+  scheduleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
 });

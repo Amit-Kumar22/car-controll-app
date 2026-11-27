@@ -6,6 +6,7 @@ export type RootStackParamList = {
   HomeControl: undefined;
   Cloud: undefined;
   CloudDevice: { id: string };
+  CloudSchedule: { deviceId: string; scheduleId?: string };
 };
 
 declare global {

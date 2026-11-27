@@ -2,12 +2,14 @@ import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { CarConnectScreen } from '../screens/CarConnectScreen';
 import { CloudDeviceScreen } from '../screens/CloudDeviceScreen';
+import { CloudScheduleScreen } from '../screens/CloudScheduleScreen';
 import { CloudScreen } from '../screens/CloudScreen';
 import { CarControlScreen } from '../screens/CarControlScreen';
 import { HomeConnectScreen } from '../screens/HomeConnectScreen';
 import { HomeControlScreen } from '../screens/HomeControlScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { useTheme } from '../theme';
+import { navigationRef } from './ref';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,7 +30,7 @@ export function RootNavigator() {
   };
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
       <Stack.Navigator
         screenOptions={{
           // White app bar with a hairline divider, like the website header.
@@ -47,6 +49,7 @@ export function RootNavigator() {
         <Stack.Screen name="HomeControl" component={HomeControlScreen} options={{ title: 'Home Automation' }} />
         <Stack.Screen name="Cloud" component={CloudScreen} options={{ title: 'IoT Cloud' }} />
         <Stack.Screen name="CloudDevice" component={CloudDeviceScreen} options={{ title: 'Device' }} />
+        <Stack.Screen name="CloudSchedule" component={CloudScheduleScreen} options={{ title: 'Schedule' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

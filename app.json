@@ -50,7 +50,14 @@
           "backgroundColor": "#FFFFFF"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#F28735",
+          "defaultChannel": "alerts"
+        }
+      ]
     ]
   }
 }

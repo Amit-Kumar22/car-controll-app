@@ -1,6 +1,15 @@
 import { create } from 'zustand';
-import { cloudApi, CloudError, cloudToken, type CloudDevice, type CloudUser } from '../services/cloudApi';
+import {
+  cloudApi,
+  CloudError,
+  cloudToken,
+  type CloudDevice,
+  type CloudSchedule,
+  type CloudScheduleInput,
+  type CloudUser,
+} from '../services/cloudApi';
 import { cloudRealtime, type CloudEvent } from '../services/cloudRealtime';
+import { getPushToken } from '../services/push';
 import { showToast } from './toastStore';
 
 type AuthStatus = 'unknown' | 'signedOut' | 'signedIn';
@@ -12,6 +21,8 @@ interface CloudState {
   loading: boolean;
   error: string | null;
   pending: Record<string, boolean>; // `${deviceId}:${pin}`
+  /** Per device id; undefined = not loaded yet. */
+  schedules: Record<string, CloudSchedule[] | undefined>;
 
   init(): Promise<void>;
   login(email: string, password: string): Promise<void>;
@@ -19,7 +30,14 @@ interface CloudState {
   logout(): Promise<void>;
   loadDevices(): Promise<void>;
   write(deviceId: string, pin: string, value: number | string): Promise<void>;
+  loadSchedules(deviceId: string): Promise<void>;
+  /** Creates (no id) or updates a schedule. Throws on failure so the form can show it. */
+  saveSchedule(deviceId: string, input: CloudScheduleInput, id?: string): Promise<void>;
+  setScheduleEnabled(s: CloudSchedule, enabled: boolean): Promise<void>;
+  deleteSchedule(s: CloudSchedule): Promise<void>;
 }
+
+const byTime = (a: CloudSchedule, b: CloudSchedule) => a.time.localeCompare(b.time);
 
 function applyEvent(devices: CloudDevice[], e: CloudEvent): CloudDevice[] {
   if (e.type === 'pin') {
@@ -41,6 +59,23 @@ function applyEvent(devices: CloudDevice[], e: CloudEvent): CloudDevice[] {
   return devices;
 }
 
+/** This phone's push token once registered with the server (so logout can remove it). */
+let pushToken: string | null = null;
+
+async function registerPush() {
+  const r = await getPushToken();
+  if ('skipped' in r) {
+    if (__DEV__) console.log('[push] not registered:', r.skipped);
+    return;
+  }
+  try {
+    await cloudApi.registerPush(r.token);
+    pushToken = r.token;
+  } catch (e) {
+    if (__DEV__) console.log('[push] register failed:', e);
+  }
+}
+
 export const useCloudStore = create<CloudState>()((set, get) => {
   function startRealtime() {
     const token = cloudToken.get();
@@ -57,6 +92,7 @@ export const useCloudStore = create<CloudState>()((set, get) => {
     await cloudToken.save(token);
     set({ auth: 'signedIn', user, error: null });
     startRealtime();
+    registerPush();
     await get().loadDevices();
   }
 
@@ -76,6 +112,7 @@ export const useCloudStore = create<CloudState>()((set, get) => {
     loading: false,
     error: null,
     pending: {},
+    schedules: {},
 
     async init() {
       if (get().auth !== 'unknown') return;
@@ -87,6 +124,8 @@ export const useCloudStore = create<CloudState>()((set, get) => {
       try {
         const { user } = await cloudApi.me();
         set({ user });
+        registerPush(); // token may have rotated since last launch
+
       } catch (e) {
         if (await handleAuthError(e)) return;
       }
@@ -105,8 +144,11 @@ export const useCloudStore = create<CloudState>()((set, get) => {
 
     async logout() {
       cloudRealtime.stop();
+      // Stop this phone getting the user's alerts (best effort, needs the session token).
+      if (pushToken) await cloudApi.unregisterPush(pushToken).catch(() => {});
+      pushToken = null;
       await cloudToken.clear();
-      set({ auth: 'signedOut', user: null, devices: null, error: null, pending: {} });
+      set({ auth: 'signedOut', user: null, devices: null, error: null, pending: {}, schedules: {} });
     },
 
     async loadDevices() {
@@ -151,6 +193,58 @@ export const useCloudStore = create<CloudState>()((set, get) => {
       } finally {
         const { [key]: _done, ...rest } = get().pending;
         set({ pending: rest });
+      }
+    },
+
+    async loadSchedules(deviceId) {
+      try {
+        const { schedules } = await cloudApi.schedules(deviceId);
+        set({ schedules: { ...get().schedules, [deviceId]: schedules.sort(byTime) } });
+      } catch (e) {
+        if (await handleAuthError(e)) return;
+        showToast(e instanceof Error ? e.message : 'Could not load schedules', 'error');
+      }
+    },
+
+    async saveSchedule(deviceId, input, id) {
+      try {
+        const { schedule } = id ? await cloudApi.updateSchedule(id, input) : await cloudApi.createSchedule(deviceId, input);
+        const list = (get().schedules[deviceId] ?? []).filter((x) => x.id !== schedule.id);
+        set({ schedules: { ...get().schedules, [deviceId]: [...list, schedule].sort(byTime) } });
+      } catch (e) {
+        if (await handleAuthError(e)) return;
+        throw e;
+      }
+    },
+
+    async setScheduleEnabled(s, enabled) {
+      const replace = (next: CloudSchedule) =>
+        set({
+          schedules: {
+            ...get().schedules,
+            [s.deviceId]: (get().schedules[s.deviceId] ?? []).map((x) => (x.id === s.id ? next : x)),
+          },
+        });
+      replace({ ...s, enabled }); // optimistic
+      try {
+        const { schedule } = await cloudApi.updateSchedule(s.id, { enabled });
+        replace(schedule);
+      } catch (e) {
+        if (await handleAuthError(e)) return;
+        replace(s);
+        showToast(e instanceof Error ? e.message : 'Could not update schedule', 'error');
+      }
+    },
+
+    async deleteSchedule(s) {
+      try {
+        await cloudApi.deleteSchedule(s.id);
+        set({
+          schedules: { ...get().schedules, [s.deviceId]: (get().schedules[s.deviceId] ?? []).filter((x) => x.id !== s.id) },
+        });
+      } catch (e) {
+        if (await handleAuthError(e)) return;
+        showToast(e instanceof Error ? e.message : 'Could not delete schedule', 'error');
       }
     },
   };

@@ -33,6 +33,28 @@ export interface CloudDevice {
   datastreams: CloudDatastream[];
 }
 
+export interface CloudSchedule {
+  id: string;
+  deviceId: string;
+  name: string;
+  pin: string;
+  value: CloudPinValue;
+  /** "HH:MM", 24-hour, in `timezone` */
+  time: string;
+  /** 0 = Sunday … 6 = Saturday */
+  days: number[];
+  timezone: string;
+  enabled: boolean;
+  lastRunAt: string | null;
+  lastError: string | null;
+  nextRunAt: string | null;
+}
+
+export type CloudScheduleInput = Pick<CloudSchedule, 'name' | 'pin' | 'time' | 'days' | 'timezone'> & {
+  value: number;
+  enabled?: boolean;
+};
+
 export interface CloudUser {
   id: string;
   email: string;
@@ -110,6 +132,16 @@ export const cloudApi = {
   device: (id: string) => request<{ device: CloudDevice }>(`/api/devices/${id}`),
   write: (id: string, pin: string, value: number | string) =>
     request<{ pin: string; value: CloudPinValue }>(`/api/devices/${id}/write`, { body: { pin, value } }),
+  registerPush: (pushToken: string) =>
+    request<{ ok: true }>('/api/push-tokens', { body: { token: pushToken, platform: 'android' } }),
+  unregisterPush: (pushToken: string) =>
+    request<{ ok: true }>('/api/push-tokens', { method: 'DELETE', body: { token: pushToken } }),
+  schedules: (deviceId: string) => request<{ schedules: CloudSchedule[] }>(`/api/devices/${deviceId}/schedules`),
+  createSchedule: (deviceId: string, input: CloudScheduleInput) =>
+    request<{ schedule: CloudSchedule }>(`/api/devices/${deviceId}/schedules`, { body: input }),
+  updateSchedule: (id: string, input: Partial<CloudScheduleInput>) =>
+    request<{ schedule: CloudSchedule }>(`/api/schedules/${id}`, { method: 'PATCH', body: input }),
+  deleteSchedule: (id: string) => request<{ ok: true }>(`/api/schedules/${id}`, { method: 'DELETE' }),
 };
 
 export const CLOUD_WEBSITE = CLOUD_API_URL;
