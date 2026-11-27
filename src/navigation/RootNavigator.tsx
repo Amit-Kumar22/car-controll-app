@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { CarConnectScreen } from '../screens/CarConnectScreen';
 import { CloudDeviceScreen } from '../screens/CloudDeviceScreen';
@@ -14,7 +14,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const t = useTheme();
-  const base = t.dark ? DarkTheme : DefaultTheme;
+  const base = DefaultTheme;
   const navTheme = {
     ...base,
     colors: {
@@ -31,10 +31,11 @@ export function RootNavigator() {
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator
         screenOptions={{
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: t.colors.background },
+          // White app bar with a hairline divider, like the website header.
+          headerShadowVisible: true,
+          headerStyle: { backgroundColor: t.colors.surface },
           headerTintColor: t.colors.primaryText,
-          headerTitleStyle: { fontWeight: '800', color: t.colors.text },
+          headerTitleStyle: { fontWeight: '700', fontSize: 18, color: t.colors.text },
           contentStyle: { backgroundColor: t.colors.background },
           animation: 'slide_from_right',
         }}

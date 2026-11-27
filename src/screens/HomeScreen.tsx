@@ -42,8 +42,9 @@ function ModuleTile({
   onPress: () => void;
 }) {
   const t = useTheme();
-  const iconBg = tone === 'orange' ? t.colors.primarySoft : t.dark ? t.colors.surfaceAlt : '#EEEEED';
-  const iconFg = tone === 'orange' ? t.colors.primaryText : t.dark ? t.colors.text : palette.charcoal;
+  // Saffron tile when the module is live, otherwise the brand tone (as on the website's device cards).
+  const iconBg = online ? t.colors.primary : tone === 'orange' ? t.colors.primarySoft : t.colors.off;
+  const iconFg = online ? t.colors.onPrimary : tone === 'orange' ? t.colors.primaryText : palette.charcoal;
   const statusColor = online ? t.colors.success : t.colors.textMuted;
   return (
     <Pressable
@@ -99,10 +100,11 @@ function QuickAction({
       disabled={loading}
       style={({ pressed }) => [
         styles.quick,
-        { backgroundColor: t.colors.surfaceAlt, borderColor: t.colors.border, opacity: pressed ? 0.8 : 1 },
+        { backgroundColor: t.colors.surface, borderColor: t.colors.border, transform: [{ scale: pressed ? 0.98 : 1 }] },
+        cardShadow(t),
       ]}
     >
-      <View style={[styles.quickIcon, { backgroundColor: t.colors.surface }]}>
+      <View style={[styles.quickIcon, { backgroundColor: t.colors.primarySoft, borderColor: t.colors.primary + '40' }]}>
         {loading ? <ActivityIndicator size="small" color={t.colors.primary} /> : <Icon color={t.colors.primaryText} size={18} />}
       </View>
       <Text style={[styles.quickText, { color: t.colors.text }]} numberOfLines={1}>
@@ -175,7 +177,9 @@ export function HomeScreen() {
             <BrandMark size={150} tint="rgba(255,255,255,0.14)" />
           </View>
           <Text style={styles.bannerDate}>{dateLabel}</Text>
-          <Text style={styles.bannerTitle}>{greeting(now)}, Trainer</Text>
+          <Text style={styles.bannerTitle} numberOfLines={1}>
+            {greeting(now)}, User
+          </Text>
           <Text style={styles.bannerSub}>Robotics Trainer · Lab control</Text>
           <View style={styles.bannerStats}>
             <View style={styles.stat}>
@@ -295,11 +299,11 @@ const styles = StyleSheet.create({
   statDivider: { width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.3)', marginHorizontal: spacing.lg },
 
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: spacing.sm },
-  sectionTitle: { fontSize: font.lg, fontWeight: '800' },
+  sectionTitle: { fontSize: font.lg, fontWeight: '800', letterSpacing: -0.2 },
   sectionHint: { fontSize: font.xs, fontWeight: '600' },
 
   grid: { flexDirection: 'row', gap: spacing.md },
-  tile: { flex: 1, borderRadius: radius.lg - 4, borderWidth: 1, padding: spacing.lg, minHeight: 168 },
+  tile: { flex: 1, borderRadius: radius.lg - 4, borderWidth: 1, padding: spacing.lg, minHeight: 172 },
   tileTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   tileIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   arrow: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
@@ -326,7 +330,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: spacing.md,
   },
-  quickIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  quickIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   quickText: { fontSize: font.md, fontWeight: '700', flex: 1 },
 
   version: { textAlign: 'center', fontSize: font.xs, marginTop: spacing.lg },

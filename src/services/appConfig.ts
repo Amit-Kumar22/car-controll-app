@@ -5,7 +5,7 @@
  * Must run while the phone has internet — i.e. NOT while traffic is pinned
  * to the control box's hotspot (see wifi.forceWifi).
  */
-import { CLOUD_API_URL, CLOUD_TIMEOUT_MS, MOCK_MODE, type ApplianceConfig } from '../config';
+import { CLOUD_API_URL, CLOUD_TIMEOUT_MS, type ApplianceConfig } from '../config';
 
 export interface RemoteAppConfig {
   version: number;
@@ -36,8 +36,9 @@ function sanitize(raw: unknown): ApplianceConfig[] | null {
   return out;
 }
 
+// Also runs in MOCK_MODE: mock mode only fakes the hardware (car, control box),
+// so the website's appliance list can be tried without an ESP32.
 export async function fetchAppConfig(): Promise<RemoteAppConfig> {
-  if (MOCK_MODE) throw new Error('Mock mode: using built-in appliances');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CLOUD_TIMEOUT_MS);
   try {

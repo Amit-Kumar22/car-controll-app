@@ -14,7 +14,7 @@ import { cardShadow, font, radius, spacing, useTheme } from '../theme';
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const t = useTheme();
   return (
-    <View style={[styles.card, { backgroundColor: t.colors.surface }, cardShadow(t), style]}>
+    <View style={[styles.card, { backgroundColor: t.colors.surface, borderColor: t.colors.border }, cardShadow(t), style]}>
       {children}
     </View>
   );
@@ -46,11 +46,13 @@ export function Button({
     primary: t.colors.primary,
     accent: t.colors.accent,
     danger: t.colors.danger,
-    outline: 'transparent',
+    outline: t.colors.surface,
     ghost: 'transparent',
   };
   const fg =
-    variant === 'outline' || variant === 'ghost'
+    variant === 'outline'
+      ? t.colors.text
+      : variant === 'ghost'
       ? t.colors.primaryText
       : variant === 'accent'
         ? t.colors.onAccent
@@ -67,9 +69,12 @@ export function Button({
         styles.button,
         {
           backgroundColor: bg[variant],
-          borderColor: variant === 'outline' ? t.colors.primary : 'transparent',
-          ...(variant === 'primary' || variant === 'accent' ? { shadowColor: t.colors.primary, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 } : null),
-          opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
+          borderColor: variant === 'outline' ? t.colors.border : 'transparent',
+          ...(variant === 'primary' || variant === 'accent'
+            ? { shadowColor: t.colors.primary, shadowOpacity: 0.28, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 }
+            : null),
+          opacity: isDisabled ? 0.5 : 1,
+          transform: [{ scale: pressed && !isDisabled ? 0.98 : 1 }],
         },
         style,
       ]}
@@ -115,7 +120,7 @@ export function StatusPill({
 
 export function SectionTitle({ children }: { children: ReactNode }) {
   const t = useTheme();
-  return <Text style={[styles.section, { color: t.colors.textMuted }]}>{children}</Text>;
+  return <Text style={[styles.section, { color: t.colors.primaryText }]}>{children}</Text>;
 }
 
 export function Hint({ children, tone = 'info' }: { children: ReactNode; tone?: 'info' | 'error' }) {
@@ -131,10 +136,10 @@ export function Hint({ children, tone = 'info' }: { children: ReactNode; tone?: 
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.lg, padding: spacing.xl },
+  card: { borderRadius: radius.lg - 4, borderWidth: 1, padding: spacing.xl },
   button: {
     minHeight: 52,
-    borderRadius: radius.md,
+    borderRadius: 14,
     paddingHorizontal: spacing.xl,
     flexDirection: 'row',
     alignItems: 'center',
@@ -142,7 +147,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     borderWidth: 1.5,
   },
-  buttonText: { fontSize: font.md, fontWeight: '800', letterSpacing: 0.2 },
+  buttonText: { fontSize: font.md, fontWeight: '700', letterSpacing: 0.2 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -158,11 +163,11 @@ const styles = StyleSheet.create({
   section: {
     fontSize: font.xs,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 1.6,
     textTransform: 'uppercase',
     marginTop: spacing.xl,
     marginBottom: spacing.sm,
   },
-  hint: { borderRadius: radius.md, borderWidth: 1, padding: spacing.lg, borderLeftWidth: 4 },
+  hint: { borderRadius: 14, borderWidth: 1, padding: spacing.lg, borderLeftWidth: 4 },
   hintText: { fontSize: font.sm, lineHeight: 20 },
 });

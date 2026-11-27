@@ -4,6 +4,62 @@ import type { Direction } from '../config';
 import { CONTROL_MIN_SIZE, cardShadow, font, radius, useTheme } from '../theme';
 import { RobotEyes } from './Brand';
 
+/**
+ * Round robot face in the middle of the pad: antenna, two round eyes (the
+ * motif from the "P" in the logo) and a smile. Lights up saffron while driving.
+ */
+function RobotFace({ size, active, disabled }: { size: number; active: boolean; disabled: boolean }) {
+  const t = useTheme();
+  const face = disabled ? t.colors.off : active ? t.colors.primary : t.colors.surface;
+  const feature = disabled ? t.colors.textMuted : active ? t.colors.onPrimary : t.colors.primary;
+  const rim = disabled ? t.colors.border : t.colors.primary;
+  const stroke = Math.max(2, size * 0.05);
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no"
+      style={{ alignItems: 'center' }}
+    >
+      {/* antenna */}
+      <View style={{ alignItems: 'center', marginBottom: -stroke }}>
+        <View style={{ width: size * 0.13, height: size * 0.13, borderRadius: size, backgroundColor: rim }} />
+        <View style={{ width: stroke, height: size * 0.1, backgroundColor: rim }} />
+      </View>
+      <View
+        style={[
+          styles.face,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: face,
+            borderColor: rim,
+            borderWidth: stroke,
+          },
+          !disabled && cardShadow(t),
+        ]}
+      >
+        <RobotEyes size={size * 0.2} gap={size * 0.16} color={feature} />
+        {/* smile */}
+        <View
+          style={{
+            width: size * 0.34,
+            height: size * 0.14,
+            marginTop: size * 0.09,
+            borderColor: feature,
+            borderBottomWidth: stroke,
+            borderLeftWidth: stroke,
+            borderRightWidth: stroke,
+            borderTopWidth: 0,
+            borderBottomLeftRadius: size * 0.2,
+            borderBottomRightRadius: size * 0.2,
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
 const ICONS: Record<Direction, LucideIcon> = {
   forward: ChevronUp,
   backward: ChevronDown,
@@ -76,7 +132,6 @@ export function DPad({
   onPressIn: (d: Direction) => void;
   onPressOut: (d: Direction) => void;
 }) {
-  const t = useTheme();
   const btn = Math.max(CONTROL_MIN_SIZE, Math.floor(size / 3) - 6);
   const common = { size: btn, disabled, onPressIn, onPressOut };
   return (
@@ -87,20 +142,7 @@ export function DPad({
       <View style={[styles.row, { justifyContent: 'space-between' }]}>
         <DirButton dir="left" active={active === 'left'} {...common} />
         <View style={[styles.hub, { width: btn, height: btn }]}>
-          <View
-            style={[
-              styles.hubInner,
-              {
-                width: btn * 0.78,
-                height: btn * 0.78,
-                borderRadius: btn,
-                backgroundColor: active ? t.colors.primarySoft : t.colors.surfaceAlt,
-                borderColor: active ? t.colors.primary : t.colors.border,
-              },
-            ]}
-          >
-            <RobotEyes size={btn * 0.16} color={disabled ? t.colors.textMuted : t.colors.primary} />
-          </View>
+          <RobotFace size={btn * 0.82} active={!!active} disabled={disabled} />
         </View>
         <DirButton dir="right" active={active === 'right'} {...common} />
       </View>
@@ -115,6 +157,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'center', marginVertical: 2 },
   btn: { borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
   hub: { alignItems: 'center', justifyContent: 'center' },
-  hubInner: { alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  face: { alignItems: 'center', justifyContent: 'center' },
   label: { fontSize: font.xs, fontWeight: '700', marginTop: -2 },
 });

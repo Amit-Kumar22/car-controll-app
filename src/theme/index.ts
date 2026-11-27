@@ -1,5 +1,3 @@
-import { useColorScheme } from 'react-native';
-
 /**
  * HiProTech brand palette (sampled from assets/brand/hiprotech-logo.png):
  *   orange  #F28735  – "Pro", primary actions, ON state, active controls
@@ -22,10 +20,6 @@ export const palette = {
   stone: '#E4DED8',
   grey400: '#9A9A98',
   grey500: '#7A7B7A',
-  night: '#141414',
-  nightSurface: '#1F2020',
-  nightAlt: '#2A2B2B',
-  nightBorder: '#343535',
 };
 
 export interface Theme {
@@ -57,19 +51,23 @@ export interface Theme {
   };
 }
 
+/**
+ * White + saffron theme, matching the HiProTech IoT website:
+ * light-grey canvas, white cards with hairline borders, saffron for actions.
+ */
 const light: Theme = {
   dark: false,
   colors: {
-    background: palette.white,
+    background: '#F7F7F8',
     surface: palette.white,
-    surfaceAlt: '#F7F6F4',
-    border: '#ECE8E4',
-    text: palette.ink,
-    textMuted: palette.grey500,
+    surfaceAlt: '#FBFBFB',
+    border: '#E8E8EA',
+    text: '#1F2224',
+    textMuted: '#6B6E70',
     primary: palette.orange,
     onPrimary: palette.white,
-    primaryText: palette.orangeDeep,
-    primarySoft: palette.orangeSoft,
+    primaryText: '#C25A12',
+    primarySoft: '#FEF3EA',
     ink: palette.charcoal,
     onInk: palette.white,
     accent: palette.orange,
@@ -77,35 +75,9 @@ const light: Theme = {
     danger: palette.danger,
     success: palette.success,
     warning: palette.warning,
-    off: '#F1EFEC',
+    off: '#F1F1F2',
     onOff: palette.charcoal,
-    shadow: '#3B2A1C',
-  },
-};
-
-const dark: Theme = {
-  dark: true,
-  colors: {
-    background: palette.night,
-    surface: palette.nightSurface,
-    surfaceAlt: palette.nightAlt,
-    border: palette.nightBorder,
-    text: '#F3F1EF',
-    textMuted: palette.grey400,
-    primary: palette.orange,
-    onPrimary: palette.white,
-    primaryText: '#F7A566',
-    primarySoft: '#3A2717',
-    ink: '#4A4B4B',
-    onInk: palette.white,
-    accent: palette.orange,
-    onAccent: palette.white,
-    danger: '#EF4444',
-    success: '#22C55E',
-    warning: '#F59E0B',
-    off: palette.nightAlt,
-    onOff: '#C9C9C7',
-    shadow: palette.black,
+    shadow: '#101828',
   },
 };
 
@@ -116,16 +88,17 @@ export const font = { xs: 12, sm: 14, md: 16, lg: 18, xl: 22, xxl: 28, title: 32
 /** Minimum touch target for car controls (spec: 64px). */
 export const CONTROL_MIN_SIZE = 64;
 
+/** The app always uses the light (white + saffron) theme. */
 export function useTheme(): Theme {
-  return useColorScheme() === 'dark' ? dark : light;
+  return light;
 }
 
 export function cardShadow(theme: Theme) {
   return {
     shadowColor: theme.colors.shadow,
-    shadowOpacity: theme.dark ? 0.45 : 0.07,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: theme.dark ? 2 : 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   };
 }

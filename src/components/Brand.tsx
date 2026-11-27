@@ -2,7 +2,6 @@ import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-n
 import { useTheme } from '../theme';
 
 const LOGO_LIGHT = require('../../assets/brand/hiprotech-logo.png');
-const LOGO_DARK = require('../../assets/brand/hiprotech-logo-dark.png');
 const MARK = require('../../assets/brand/hiprotech-mark.png');
 
 /** Logo aspect ratio (1928 × 300). */
@@ -10,12 +9,11 @@ const LOGO_RATIO = 1928 / 300;
 /** Robot "P" mark aspect ratio (284 × 263). */
 const MARK_RATIO = 284 / 263;
 
-/** Full HiProTech word-mark; switches to a light variant in dark mode. */
+/** Full HiProTech word-mark. */
 export function BrandLogo({ width }: { width: number }) {
-  const t = useTheme();
   return (
     <Image
-      source={t.dark ? LOGO_DARK : LOGO_LIGHT}
+      source={LOGO_LIGHT}
       style={{ width, height: width / LOGO_RATIO }}
       resizeMode="contain"
       accessibilityRole="image"

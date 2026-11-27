@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Bluetooth, BluetoothOff, BluetoothSearching, OctagonX, RefreshCw, RotateCcw, Unplug, Zap } from 'lucide-react-native';
+import { Bluetooth, BluetoothOff, BluetoothSearching, RefreshCw, RotateCcw, Unplug, Zap } from 'lucide-react-native';
 import { useCallback, useEffect } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -53,33 +53,6 @@ function ConnectionBar({ onConnect }: { onConnect: () => void }) {
   );
 }
 
-function StopButton({ onPress, size, disabled }: { onPress: () => void; size: number; disabled: boolean }) {
-  const t = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Emergency stop"
-      onPressIn={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [
-        styles.stop,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: disabled ? t.colors.off : t.colors.danger,
-          borderColor: disabled ? t.colors.border : t.colors.danger + '55',
-          transform: [{ scale: pressed ? 0.95 : 1 }],
-        },
-        !disabled && cardShadow(t),
-      ]}
-    >
-      <OctagonX color={disabled ? t.colors.onOff : '#fff'} size={size * 0.32} strokeWidth={2.4} />
-      <Text style={[styles.stopText, { color: disabled ? t.colors.onOff : '#fff' }]}>STOP</Text>
-    </Pressable>
-  );
-}
-
 export function CarControlScreen() {
   const t = useTheme();
   const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -93,7 +66,7 @@ export function CarControlScreen() {
   const { connect, disconnect, acknowledgeLost } = useCarStore.getState();
 
   const connected = status === 'connected';
-  const { active, pressIn, pressOut, emergencyStop } = useHoldToMove(connected);
+  const { active, pressIn, pressOut } = useHoldToMove(connected);
 
   const reconnect = useCallback(async () => {
     if (!lastDevice) {
@@ -139,7 +112,6 @@ export function CarControlScreen() {
   // Size the pad to the available space in either orientation.
   const padArea = landscape ? Math.min(height - 140, width * 0.5) : Math.min(width - spacing.lg * 2, height * 0.46);
   const padSize = Math.max(CONTROL_MIN_SIZE * 3 + 12, padArea);
-  const stopSize = Math.max(CONTROL_MIN_SIZE * 1.5, landscape ? Math.min(height * 0.45, 180) : Math.min(width * 0.36, 150));
 
   const openDeviceList = () => nav.navigate('CarConnect');
 
@@ -213,7 +185,6 @@ export function CarControlScreen() {
         </View>
 
         <View style={[styles.side, landscape && { flex: 1 }]}>
-          <StopButton onPress={emergencyStop} size={stopSize} disabled={!connected} />
           <Text style={[styles.help, { color: t.colors.textMuted }]}>
             {connected
               ? 'Hold an arrow to drive. Let go to stop.'
@@ -253,8 +224,6 @@ const styles = StyleSheet.create({
   contentLandscape: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   padWrap: { alignItems: 'center', justifyContent: 'center' },
   side: { alignItems: 'center', gap: spacing.lg, alignSelf: 'stretch' },
-  stop: { alignItems: 'center', justifyContent: 'center', borderWidth: 6 },
-  stopText: { fontSize: font.xl, fontWeight: '900', letterSpacing: 2 },
   help: { fontSize: font.sm, textAlign: 'center' },
   mock: {
     fontSize: font.sm,

@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "platforms": [
       "android"
     ],
@@ -47,11 +47,7 @@
           "image": "./assets/splash-logo.png",
           "imageWidth": 260,
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFFF",
-          "dark": {
-            "image": "./assets/splash-logo-dark.png",
-            "backgroundColor": "#141414"
-          }
+          "backgroundColor": "#FFFFFF"
         }
       ],
       "expo-secure-store"
