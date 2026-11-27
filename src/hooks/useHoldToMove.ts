@@ -18,12 +18,25 @@ export function useHoldToMove(enabled: boolean) {
   const activeRef = useRef<Direction | null>(null);
   const [active, setActive] = useState<Direction | null>(null);
 
-  const clear = useCallback(() => {
+  const clearTimer = useCallback(() => {
     if (interval.current) clearInterval(interval.current);
     interval.current = null;
     activeRef.current = null;
-    setActive(null);
   }, []);
+
+  const clear = useCallback(() => {
+    clearTimer();
+    setActive(null);
+  }, [clearTimer]);
+
+  // Link lost or driving disabled: drop the highlighted button right away (during render,
+  // not in an effect) and stop the repeat timer below.
+  const linkOk = status === 'connected' && enabled;
+  const [prevLinkOk, setPrevLinkOk] = useState(linkOk);
+  if (prevLinkOk !== linkOk) {
+    setPrevLinkOk(linkOk);
+    if (!linkOk) setActive(null);
+  }
 
   const stop = useCallback(() => {
     clear();
@@ -61,8 +74,8 @@ export function useHoldToMove(enabled: boolean) {
 
   // Stop when the link is no longer usable.
   useEffect(() => {
-    if (status !== 'connected' || !enabled) clear();
-  }, [status, enabled, clear]);
+    if (!linkOk) clearTimer();
+  }, [linkOk, clearTimer]);
 
   // Stop when the screen loses focus.
   useFocusEffect(

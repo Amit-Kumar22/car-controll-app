@@ -1,5 +1,5 @@
 import { CircleAlert, CircleCheck, Info } from 'lucide-react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToastStore } from '../store/toastStore';
@@ -9,7 +9,7 @@ export function Toast() {
   const { message, kind, id, hide } = useToastStore();
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.timing(anim, {

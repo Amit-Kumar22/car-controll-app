@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LayoutGrid, RefreshCw, RotateCcw, Save, Search, Settings, Wifi } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Hint, SectionTitle, StatusPill } from '../components/ui';
@@ -86,12 +86,16 @@ export function HomeConnectScreen() {
   const [paths, setPaths] = useState<Record<string, AppliancePaths>>(savedPaths);
   const [routes, setRoutes] = useState<string[] | null>(null);
   const [discovering, setDiscovering] = useState(false);
-  useEffect(() => {
+  // Saved settings changed (save, reset, website update): refill the form. Done during
+  // render instead of in an effect, so the screen doesn't render twice.
+  const [synced, setSynced] = useState({ settings, savedPaths });
+  if (synced.settings !== settings || synced.savedPaths !== savedPaths) {
+    setSynced({ settings, savedPaths });
     setSsid(settings.ssid);
     setPassword(settings.password);
     setIp(settings.ip);
     setPaths(savedPaths);
-  }, [settings, savedPaths]);
+  }
 
   const setPath = (id: string, key: keyof AppliancePaths, v: string) =>
     setPaths((prev) => ({ ...prev, [id]: { ...prev[id], [key]: v } }));
